@@ -1,0 +1,79 @@
+---
+import { calendars, timeZone } from '../data/calendars';
+const active = calendars.filter((c) => c.id.trim() !== '');
+---
+
+<div id="kaiwi-cal" data-calendars={JSON.stringify(active)} data-tz={timeZone}>
+  {active.length === 0 ? (
+    <div class="coming-soon">No calendar connected yet. Add one in <code>src/data/calendars.ts</code>.</div>
+  ) : (
+    <>
+      <div class="bar">
+        <div class="filters" id="cal-filters" role="group" aria-label="Filter by organization"></div>
+        <div class="views" role="group" aria-label="Calendar view">
+          <button class="chip" type="button" data-view="MONTH" aria-pressed="true">Month</button>
+          <button class="chip" type="button" data-view="AGENDA" aria-pressed="false">List</button>
+        </div>
+      </div>
+      <div class="cal-panel" id="cal-panel"></div>
+      <p class="hint">Times are Hawaiʻi time. To sign up, click an event and follow the link in its description.</p>
+    </>
+  )}
+</div>
+
+<script>
+  function initCalendar() {
+    const root = document.getElementById('kaiwi-cal');
+    const panel = document.getElementById('cal-panel');
+    const filters = document.getElementById('cal-filters');
+    if (!root || !panel || !filters) return;
+
+    type Cal = { name: string; id: string; color: string };
+    const cals: Cal[] = JSON.parse(root.dataset.calendars ?? '[]');
+    const tz = root.dataset.tz ?? 'Pacific/Honolulu';
+    let filter = 'all';
+    let view = window.innerWidth < 700 ? 'AGENDA' : 'MONTH';
+
+    const embedUrl = () => {
+      const list = filter === 'all' ? cals : cals.filter((c) => c.id === filter);
+      let url =
+        `https://calendar.google.com/calendar/embed?ctz=${encodeURIComponent(tz)}` +
+        `&mode=${view}&showTitle=0&showPrint=0&showTabs=0&showCalendars=0&showTz=0&wkst=1&bgcolor=%23ffffff`;
+      for (const c of list) url += `&src=${encodeURIComponent(c.id)}&color=${encodeURIComponent(c.color)}`;
+      return url;
+    };
+
+    const draw = () => {
+      // Only show organization filters when there is more than one organization.
+      filters.innerHTML =
+        cals.length < 2
+          ? ''
+          : [`<button class="chip" type="button" data-filter="all" aria-pressed="${filter === 'all'}">All organizations</button>`]
+              .concat(
+                cals.map(
+                  (c) =>
+                    `<button class="chip" type="button" data-filter="${c.id}" aria-pressed="${filter === c.id}">` +
+                    `<span class="swatch" style="background:${c.color}"></span>${c.name}</button>`,
+                ),
+              )
+              .join('');
+      root.querySelectorAll<HTMLElement>('[data-view]').forEach((b) =>
+        b.setAttribute('aria-pressed', String(b.dataset.view === view)),
+      );
+      panel.innerHTML = `<iframe title="Kaiwi Coast volunteer events calendar" src="${embedUrl()}" loading="lazy"></iframe>`;
+    };
+
+    root.addEventListener('click', (e) => {
+      const btn = (e.target as HTMLElement).closest<HTMLElement>('.chip');
+      if (!btn) return;
+      if (btn.dataset.filter) filter = btn.dataset.filter;
+      if (btn.dataset.view) view = btn.dataset.view;
+      draw();
+    });
+
+    draw();
+  }
+
+  // Runs on first load and after every page change (needed because pages swap without a full reload).
+  document.addEventListener('astro:page-load', initCalendar);
+</script>

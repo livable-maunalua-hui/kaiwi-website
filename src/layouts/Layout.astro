@@ -1,0 +1,54 @@
+---
+import { ClientRouter } from 'astro:transitions';
+import '../styles/global.css';
+
+interface Props {
+  title?: string;
+  description?: string;
+}
+
+const {
+  title = 'Kaiwi Coast',
+  description = 'All things Kaiwi: volunteer events, history, and the groups caring for the Kaiwi Coast on Oʻahu.',
+} = Astro.props;
+
+const pageTitle = title === 'Kaiwi Coast' ? title : `${title} | Kaiwi Coast`;
+const path = Astro.url.pathname.replace(/\/$/, '') || '/';
+
+// Edit this list to add, remove, or rename pages in the menu.
+const nav = [
+  { href: '/', label: 'Volunteer' },
+  { href: '/history', label: 'History' },
+];
+---
+
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="description" content={description} />
+    <link rel="icon" href="/favicon.ico" sizes="48x48" />
+    <link rel="icon" type="image/png" href="/favicon.png" />
+    <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+    <title>{pageTitle}</title>
+    <!-- Makes page changes feel instant, like a single-page app, without a blank flash. -->
+    <ClientRouter />
+  </head>
+  <body>
+    <header class="site-header">
+      <div class="wrap">
+        <a class="brand" href="/">Kaiwi Coast</a>
+        <nav class="site-nav" aria-label="Main">
+          {nav.map((item) => (
+            <a href={item.href} aria-current={path === item.href ? 'page' : undefined}>{item.label}</a>
+          ))}
+        </nav>
+      </div>
+    </header>
+    <slot />
+    <footer class="site-footer">
+      <div class="wrap">Kaiwi Coast volunteer hub, in partnership with Livable Maunalua Hui.</div>
+    </footer>
+  </body>
+</html>
